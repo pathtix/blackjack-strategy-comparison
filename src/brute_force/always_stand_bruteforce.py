@@ -4,13 +4,15 @@ import os
 from resources.deck import Deck
 from resources.hand import Hand
 
+from settings import AlwaysStandBruteForceSettings
+
 class AlwaysStandBruteForce:
     def __init__(self):
-        self.deck_1 = Deck()
-        self.deck_2 = Deck()
+        self.create_deck()
+        self.simulation_amount = 10
 
-        self.main_deck = Deck()
-        self.main_deck.cards = self.deck_1.cards + self.deck_2.cards
+    def set_simulation_amount(self):
+        self.simulation_amount = AlwaysStandBruteForceSettings['Simulation Amount']
 
     def shuffle_deck(self):
         self.main_deck.shuffle()
@@ -39,6 +41,7 @@ class AlwaysStandBruteForce:
             return 'Lose'
 
     def bj_simulation(self, deck):
+        self.set_simulation_amount()
         player_hand = Hand()
         dealer_hand = Hand()
 
@@ -93,13 +96,22 @@ class AlwaysStandBruteForce:
         output_filename = os.path.join(output_dir, 'always_stand_results.xlsx')
 
         os.makedirs(output_dir, exist_ok=True)
+
+        # Create a new Excel file or clear the existing one
+        df_empty = pd.DataFrame()
+        df_empty.to_excel(output_filename, index=False)  # This creates a new file or overwrites an existing file
+
         i = 0
-        while (i < 10):
+        while (i < self.simulation_amount):
+            print(f"Simulation {i}")
             self.create_deck()
             df = self.simulate()
             try:
+                # Open the Excel writer in append mode now that the file definitely exists
                 with pd.ExcelWriter(output_filename, mode='a', if_sheet_exists='replace') as writer:
-                    df.to_excel(writer, sheet_name= "test" + str(i), index=False)
-                    i += 1
+                    df.to_excel(writer, sheet_name="test" + str(i), index=False)
             except Exception as e:
                 print(f"An error occurred during simulation {i}: {e}")
+            i += 1
+
+        return "Simulation complete. Check the output file for results."

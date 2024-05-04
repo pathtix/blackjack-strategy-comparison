@@ -6,38 +6,68 @@ import time
 from resources.deck import Deck
 from resources.hand import Hand
 
+from settings import HistoricalDataSettings
+
 class HistoricalData:
     def __init__(self):
+        self.df = None
+        self.create_deck()
+        self.simulation_amount = 10
+
+    def set_simulation_amount(self):
+        self.simulation_amount = HistoricalDataSettings['Simulation Amount']
+
+    def shuffle_deck(self):
+        self.main_deck.shuffle()
+    
+    def create_deck(self):
         self.deck_1 = Deck()
         self.deck_2 = Deck()
 
         self.main_deck = Deck()
         self.main_deck.cards = self.deck_1.cards + self.deck_2.cards
 
+    def importCSV_async(self):
         self.df = self.importCSV()
-
-    def shuffle_deck(self):
-        self.main_deck.shuffle()
 
     def importCSV(self):
         start_time = time.time()
         print("Importing CSV...")
-        chunksize = 50000
+        chunksize = 100000
         chunks = []
         rows = 0
 
-        for chunk in pd.read_csv("../../etc/blackjack_simulator.csv", chunksize=chunksize):
+        cols_to_keep = ['initial_hand', 'dealer_up', 'actions_taken']
+
+        for chunk in pd.read_csv(HistoricalDataSettings['Data Source'], usecols=cols_to_keep, chunksize=chunksize):
             chunks.append(chunk)
             rows += chunk.shape[0]
             
-            if rows >= 50000000:
+            if rows >= HistoricalDataSettings['Rows']:
                 break
         df = pd.concat(chunks, ignore_index=True)
-        
+    
         end_time = time.time()
         print(f"Importing CSV took {end_time - start_time} seconds")
 
         return df
+    
+    def hand_simplifier(self, hand):
+        face_cards = ['King', 'Queen', 'Jack']
+        values = []
+
+        for card in hand:
+            card = str(card)
+            card_name = card.split(' ')[0]  # Get the first word in the card name
+
+            if card_name in face_cards:
+                values.append(10)
+            elif card_name == 'Ace':
+                values.append(11)  # or 11, depending on your game's rules
+            else:
+                values.append(int(card_name))  # Convert the card name to an integer
+
+        return values
     
     def check_next_move(self, inital_hand, dealer_up, df):
         filtered_df = df.loc[(df['initial_hand'] == inital_hand) & (df['dealer_up'] == dealer_up)]        
@@ -56,16 +86,14 @@ class HistoricalData:
         return most_common_action_sequence
     
     def find_action(self, player_hand, dealer_up):
-        player_card_value = player_hand.get_value()
-        action = self.check_next_move(str(player_card_value), dealer_up.value, self.df)
-
+        player_hand = self.hand_simplifier(player_hand.cards)
+        action = self.check_next_move(str(player_hand), dealer_up.value, self.df)
         return action
     
     def simulate_game(self, player_hand, dealer_hand, deck):
         dealer_up = dealer_hand.cards[0]    
           
         action = self.find_action(player_hand, dealer_up)
-        #print(str(action) + " " + str(dealer_up) + " " + str(player_hand.get_value()))
 
         if action is not None:
             action_list_len = len(action)
@@ -102,6 +130,7 @@ class HistoricalData:
             return 'Lose'
 
     def bj_simulation(self, deck):
+        self.set_simulation_amount()
         player_hand = Hand()
         dealer_hand = Hand()
 
@@ -111,7 +140,6 @@ class HistoricalData:
         dealer_hand.add_card(deck.deal())
 
         action = self.find_action(player_hand, dealer_hand.cards[0])
-        print(action)
         
         result = self.simulate_game(player_hand, dealer_hand, deck)
 
@@ -159,15 +187,29 @@ class HistoricalData:
         output_dir = os.path.join(script_dir, 'historical_data_results')
         output_filename = os.path.join(output_dir, 'historical_data_results.xlsx')
 
-        # Create the output directory if it doesn't exist
         os.makedirs(output_dir, exist_ok=True)
-        df = self.simulate()
+
+        # Create a new Excel file or clear the existing one
+        df_empty = pd.DataFrame()
+        df_empty.to_excel(output_filename, index=False)  # This creates a new file or overwrites an existing file
 
         i = 0
-        try:
-            with pd.ExcelWriter(output_filename, mode='a', if_sheet_exists='replace') as writer:
-                df.to_excel(writer, sheet_name= "test" + str(i), index=False)
-                i += 1
-        except Exception as e:
-            print(f"An error occurred during simulation {i}: {e}")
+        while (i < self.simulation_amount):
+            print(f"Simulation {i}")
+            self.create_deck()
+            df = self.simulate()
+            try:
+                # Open the Excel writer in append mode now that the file definitely exists
+                with pd.ExcelWriter(output_filename, mode='a', if_sheet_exists='replace') as writer:
+                    df.to_excel(writer, sheet_name="test" + str(i), index=False)
+            except Exception as e:
+                print(f"An error occurred during simulation {i}: {e}")
+            i += 1
 
+        return "Simulation complete. Check the output file for results."
+    
+
+if __name__ == "__main__":
+    hd = HistoricalData()
+    hd.importCSV_async()
+    hd.output_results()

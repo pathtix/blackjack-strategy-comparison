@@ -4,7 +4,9 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 
-from settings import BruteForceSettings
+from settings import (
+    AlwaysHitBruteForceSettings, AlwaysStandBruteForceSettings, RandomHitStandBruteForceSettings, BasicStrategyWithCountingSettings, BasicStrategyWithoutCountingSettings, HistoricalDataSettings
+)
 
 class SettingsScreen(QWidget):
     def __init__(self, parent=None):
@@ -14,9 +16,9 @@ class SettingsScreen(QWidget):
             "Always stand brute force": [("Simulation Amount", QLineEdit)],
             "Always hit brute force": [("Simulation Amount", QLineEdit), (("Threshold", QLineEdit))],
             "Random hit/stand": [("Simulation Amount", QLineEdit)],
-            "Basic strategy": [("Soft 17 rule", QCheckBox), ("Stand at 18", QCheckBox), ("Is doubleing allowed", QCheckBox)],
-            "Basic strategy with counting": [("Soft 17 rule", QCheckBox), ("Counting system", QLineEdit)],
-            "Historical data": [("Data source", QLineEdit)]
+            "Basic strategy without counting": [("Simulation Amount", QLineEdit), ("Soft 17 rule", QCheckBox), ("Is doubleing allowed", QCheckBox)],
+            "Basic strategy with counting": [("Simulation Amount", QLineEdit), ("Soft 17 rule", QCheckBox),  ("Is doubleing allowed", QCheckBox), ("Counting system", QLineEdit)],
+            "Historical data": [("Simulation Amount", QLineEdit), ("Data source", QLineEdit)]
         }
 
         self.settings_widgets = {}  # New dictionary to store widget references
@@ -90,11 +92,26 @@ class SettingsScreen(QWidget):
 
         for param_name, widget in model_widgets.items():
             if isinstance(widget, QLineEdit):
-                print(f"Parameter: {param_name}, Value: {widget.text()}")
-                if (param_name == 'Threshold'):
-                    BruteForceSettings['Threshold'] = int(widget.text())
-                elif (param_name == 'Simulation Amount'):
-                    BruteForceSettings['Simulation Amount'] = int(widget.text())
+                if (widget.text() != ''):
+                    print(f"Parameter: {param_name}, Value: {widget.text()}")
+                    if (param_name == 'Threshold'):
+                        AlwaysHitBruteForceSettings['Threshold'] = int(widget.text())
+                    if (param_name == 'Simulation Amount'):
+                        match model_name:
+                            case "Always stand brute force":
+                                AlwaysStandBruteForceSettings['Simulation Amount'] = int(widget.text())
+                            case "Always hit brute force":
+                                AlwaysHitBruteForceSettings['Simulation Amount'] = int(widget.text())
+                            case "Random hit/stand":
+                                RandomHitStandBruteForceSettings['Simulation Amount'] = int(widget.text())
+                            case "Basic strategy without counting":
+                                BasicStrategyWithoutCountingSettings['Simulation Amount'] = int(widget.text())
+                            case "Basic strategy with counting":
+                                BasicStrategyWithCountingSettings['Simulation Amount'] = int(widget.text())
+                            case "Historical data":
+                                HistoricalDataSettings['Simulation Amount'] = int(widget.text())
+                    if (param_name == 'Data source'):
+                        HistoricalDataSettings['Data Source'] = widget.text()
 
             elif isinstance(widget, QCheckBox):
                 print(f"Parameter: {param_name}, Checked: {widget.isChecked()}")

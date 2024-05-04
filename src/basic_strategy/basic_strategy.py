@@ -6,18 +6,27 @@ import time
 from resources.deck import Deck
 from resources.hand import Hand
 
+from settings import BasicStrategyWithoutCountingSettings
+
 class BasicStrategy:
     def __init__(self):
+        self.create_deck()
+        self.simulation_amount = 10
+
+        self.money = 1000
+
+    def set_simulation_amount(self):
+        self.simulation_amount = BasicStrategyWithoutCountingSettings['Simulation Amount']
+
+    def shuffle_deck(self):
+        self.main_deck.shuffle()
+
+    def create_deck(self):
         self.deck_1 = Deck()
         self.deck_2 = Deck()
 
         self.main_deck = Deck()
         self.main_deck.cards = self.deck_1.cards + self.deck_2.cards
-
-        self.money = 1000
-
-    def shuffle_deck(self):
-        self.main_deck.shuffle()
 
     def check_basicstrategy(self, player_hand_value, dealer_hand_value):
         H = "Hit"
@@ -128,6 +137,7 @@ class BasicStrategy:
         return card_values
 
     def bj_simulation(self, deck):
+        self.set_simulation_amount()
         self.money -= 100
         action_list = []
         player_hand = Hand()
@@ -193,14 +203,23 @@ class BasicStrategy:
         output_dir = os.path.join(script_dir, 'basic_strategy_results')
         output_filename = os.path.join(output_dir, 'basic_strategy_results.xlsx')
 
-        # Create the output directory if it doesn't exist
         os.makedirs(output_dir, exist_ok=True)
-        df = self.simulate()
+
+        # Create a new Excel file or clear the existing one
+        df_empty = pd.DataFrame()
+        df_empty.to_excel(output_filename, index=False)  # This creates a new file or overwrites an existing file
 
         i = 0
-        try:
-            with pd.ExcelWriter(output_filename, mode='a', if_sheet_exists='replace') as writer:
-                df.to_excel(writer, sheet_name= "test" + str(i), index=False)
-                i += 1
-        except Exception as e:
-            print(f"An error occurred during simulation {i}: {e}")
+        while (i < self.simulation_amount):
+            print(f"Simulation {i}")
+            self.create_deck()
+            df = self.simulate()
+            try:
+                # Open the Excel writer in append mode now that the file definitely exists
+                with pd.ExcelWriter(output_filename, mode='a', if_sheet_exists='replace') as writer:
+                    df.to_excel(writer, sheet_name="test" + str(i), index=False)
+            except Exception as e:
+                print(f"An error occurred during simulation {i}: {e}")
+            i += 1
+
+        return "Simulation complete. Check the output file for results."

@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QGridLayout, QComboBox, QPushButton, QLabel, QFrame
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QPixmap, QMovie
 
 from basic_strategy.basic_strategy import BasicStrategy
 
@@ -10,6 +10,8 @@ from brute_force.random_bruteforce import RandomBruteForce
 
 from historical_data.historical_data import HistoricalData
 
+from user_interface.simulation_worker import SimulationWorker
+
 # $env:PYTHONPATH += ";C:\Users\genco\Desktop\blackjack-strategy-comparison\src"
 
 class SimulationScreen(QWidget):
@@ -18,12 +20,20 @@ class SimulationScreen(QWidget):
         self.setupUI()
 
         self.gridAmount = 0
+        self.threads = []  # List to hold active threads
 
         self.basic_strategy = BasicStrategy()
         self.always_hit_bruteforce = AlwaysHitBruteForce()
         self.always_stand_bruteforce = AlwaysStandBruteForce()
         self.random_bruteforce = RandomBruteForce()
-        self.historical_data = HistoricalData
+        self.historical_data = HistoricalData()
+
+        self.setStyleSheet(""" 
+            #frame {
+                background-color: #2d3848;
+                border-radius: 5px;
+            }
+                           """)
 
     def setupUI(self):
         self.layout = QGridLayout(self)
@@ -51,7 +61,7 @@ class SimulationScreen(QWidget):
                 background-color: #64c0df;
             }
         """)
-        self.runButton.clicked.connect(self.test)
+        self.runButton.clicked.connect(self.drawSplittedScreen)
 
         # Add widgets to the grid
         self.layout.addWidget(self.comboBox, 0, 0)
@@ -66,7 +76,7 @@ class SimulationScreen(QWidget):
 
         self.setLayout(self.layout)
 
-    def test(self):
+    def drawSplittedScreen(self):
         self.comboboxes = []
 
         selected_num = int(self.comboBox.currentText())
@@ -95,15 +105,14 @@ class SimulationScreen(QWidget):
         for i in range(selected_num):
             # Create frame and layout for individual simulation screen
             frame = QFrame(self)
+            frame.setObjectName("frame")
             frame.setFrameShape(QFrame.Shape.StyledPanel)
-            frame.setStyleSheet("border: 1px solid #64c0df;")  # Red border for illustration
-
             frame_layout = QGridLayout(frame)
             frame_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
             # Create ComboBox
             combobox = QComboBox(frame)
-            combobox.addItems(["Always stand brute force", "Always hit brute force", "Random hit/stand","Basic Strategy without counting", "Basic Strategy with counting", "Historical Data", "RL Model"])
+            combobox.addItems(["Always stand brute force", "Always hit brute force", "Random hit/stand brute force","Basic Strategy without counting", "Basic Strategy with counting", "Historical Data", "RL Model"])
             frame_layout.addWidget(combobox, 0, 0, alignment=Qt.AlignmentFlag.AlignCenter)
             self.comboboxes.append(combobox)
 
@@ -142,6 +151,7 @@ class SimulationScreen(QWidget):
 
             frame_layout.addWidget(settings_button, 0, 2, alignment=Qt.AlignmentFlag.AlignCenter)
 
+
             # Connect the button's clicked signal
             play_button.clicked.connect(lambda ch, index=i: self.run_script(index))
             settings_button.clicked.connect(lambda ch, index=i: self.setting_script(index))
@@ -166,23 +176,33 @@ class SimulationScreen(QWidget):
         print(f"Run button for combobox at index {index} clicked to run script: {script_name}")
 
         
-        # Here, call the actual function/script based on the script_name
-        # For example, you could have a dictionary mapping script names to functions:
-        
+                
         script_functions = {
             "Always hit brute force": self.always_hit_bruteforce.output_results,
             "Always stand brute force": self.always_stand_bruteforce.output_results,
-            "Random hit/stand": self.random_bruteforce.output_results,
+            "Random hit/stand brute force": self.random_bruteforce.output_results,
             "Basic Strategy without counting" : self.basic_strategy.output_results,
+            "Basic Strategy with counting" : self.basic_strategy.output_results, # will implement counting later
+            "Historical Data": self.historical_data.output_results,
         }
 
-        script_function = script_functions.get(script_name)
-        if script_function:
-            self.always_stand_bruteforce.set_simulation_amount()
-            script_function()
+        if script_name == "Historical Data":
+            self.historical_data = HistoricalData()
+    
+        function_to_run = script_functions.get(script_name)
+        if function_to_run:
+            # Create a thread to run the simulation
+            worker = SimulationWorker(function_to_run)
+            worker.finished.connect(self.on_simulation_complete)
+            worker.finished.connect(worker.deleteLater)  # Ensure thread cleanup
+            worker.start()  # Start the thread
+            self.threads.append(worker)  # Keep track of the thread
 
     def setting_script(self, index):
         combobox = self.comboboxes[index]
         # Now you can safely get the script name
         script_name = combobox.currentText()
         print(f"Setting button for combobox at index {index}")
+
+    def on_simulation_complete(self, message):
+        print("Simulation completed with message:", message)

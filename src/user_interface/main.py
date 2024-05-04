@@ -12,7 +12,7 @@ class MainApplication(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Blackjack Strategy Simulator")
-        self.setGeometry(100, 100, 1280, 720)  # x, y, width, height
+        self.setGeometry(100, 100, 1440, 900)  # x, y, width, height
 
         # Stacked widget to manage different screens
         self.stacked_widget = QStackedWidget()
@@ -33,8 +33,8 @@ class MainApplication(QMainWindow):
 
     def show_main_screen(self):
         self.stacked_widget.setCurrentWidget(self.main_screen)
-
-def main():
+        
+if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setStyleSheet("""
         #SidebarFrame {
@@ -51,6 +51,3 @@ def main():
     main_window = MainApplication()
     main_window.show()
     sys.exit(app.exec())
-
-if __name__ == "__main__":
-    main()
