@@ -21,6 +21,7 @@ class SimulationScreen(QWidget):
 
         self.gridAmount = 0
         self.threads = []  # List to hold active threads
+        
 
         self.basic_strategy = BasicStrategy()
         self.always_hit_bruteforce = AlwaysHitBruteForce()
@@ -99,7 +100,7 @@ class SimulationScreen(QWidget):
 
         # Calculate the number of rows needed, assuming a max of 3 columns
         rows = (selected_num + 2) // 3
-        columns = 3
+        columns = selected_num if selected_num < 3 else 3
 
         # Create and add new screen labels
         for i in range(selected_num):

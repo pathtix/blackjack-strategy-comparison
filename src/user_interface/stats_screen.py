@@ -16,6 +16,8 @@ class StatsScreen(QWidget):
         super().__init__(parent)
         self.current_sheet_number = 0
         self.working_path = ''
+
+        self.graph_windows = []
         
         self.setupUI()
         self.setStyleSheet(""" 
@@ -160,11 +162,12 @@ class StatsScreen(QWidget):
         print(f"Selected models: {selected_models}")
         print(f"X-axis: {x_axis}, Y-axis: {y_axis}")
 
-        self.graph_window = GraphWindow(selected_models=selected_models, x_axis=x_axis, y_axis=y_axis)
+        self.graph_window = GraphWindow(selected_models=selected_models, x_param=x_axis, y_param=y_axis)
 
         self.destroyed.connect(self.graph_window.close)
         self.graph_window.show()
-
+        self.graph_windows.append(self.graph_window)
+        
     def load_data(self):
         selected_model = self.data_combo.currentText()
         self.current_sheet_number = 0 # to reset back to page 0 when loading new data
