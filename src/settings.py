@@ -22,7 +22,8 @@ BasicStrategyWithoutCountingSettings = {
 HistoricalDataSettings = {
     'Simulation Amount' : 1,
     'Rows' : 50000000,
-    'Data Source' : "../../etc/blackjack_simulator.csv"
+    'Data Source' : "../etc/blackjack_simulator.csv",
+    'Doubleing Allowed' : False
 }
 
 RLSettings = {

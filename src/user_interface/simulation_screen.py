@@ -21,7 +21,7 @@ class SimulationScreen(QWidget):
 
         self.gridAmount = 0
         self.threads = []  # List to hold active threads
-        
+        self.csv_imported = False  # Flag to check if CSV has been imported
 
         self.basic_strategy = BasicStrategy()
         self.always_hit_bruteforce = AlwaysHitBruteForce()
@@ -184,20 +184,35 @@ class SimulationScreen(QWidget):
             "Random hit/stand brute force": self.random_bruteforce.output_results,
             "Basic Strategy without counting" : self.basic_strategy.output_results,
             "Basic Strategy with counting" : self.basic_strategy.output_results, # will implement counting later
-            "Historical Data": self.historical_data.output_results,
+            "Historical Data": [self.historical_data.importCSV_async, self.historical_data.output_results],
         }
-
-        if script_name == "Historical Data":
-            self.historical_data = HistoricalData()
     
         function_to_run = script_functions.get(script_name)
-        if function_to_run:
+        if script_name == "Historical Data":
+            if not self.csv_imported:
+                print("Importing CSV for historical data")
+                worker = SimulationWorker(self.historical_data.importCSV_async)
+                worker.finished.connect(lambda message: self.run_historical_data(script_name, script_functions))
+                worker.error.connect(lambda e: print(f"Error: {e}"))
+                worker.start()
+                self.threads.append(worker)
+                self.csv_imported = True  # Set flag after successful import
+            else:
+                self.run_historical_data(script_name, script_functions)
+        elif function_to_run:
             # Create a thread to run the simulation
             worker = SimulationWorker(function_to_run)
             worker.finished.connect(self.on_simulation_complete)
             worker.finished.connect(worker.deleteLater)  # Ensure thread cleanup
             worker.start()  # Start the thread
             self.threads.append(worker)  # Keep track of the thread
+
+    def run_historical_data(self, script_name, script_functions):
+        worker2 = SimulationWorker(script_functions[script_name][1])
+        worker2.finished.connect(self.on_simulation_complete)
+        worker2.error.connect(lambda e: print(f"Error: {e}"))
+        worker2.start()
+        self.threads.append(worker2)
 
     def setting_script(self, index):
         combobox = self.comboboxes[index]

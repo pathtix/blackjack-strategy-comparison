@@ -8,11 +8,19 @@ from resources.hand import Hand
 
 from settings import HistoricalDataSettings
 
+from basic_strategy.basic_strategy import BasicStrategy
+
+#TODO : Fix the issue with action taken list is missing if basic strategy is used !!
+
 class HistoricalData:
     def __init__(self):
         self.df = None
         self.create_deck()
         self.simulation_amount = 10
+        self.doublingAllowed = HistoricalDataSettings['Doubleing Allowed']
+        
+        self.money = 1000
+        self.usedBasicStrategy = False
 
     def set_simulation_amount(self):
         self.simulation_amount = HistoricalDataSettings['Simulation Amount']
@@ -45,11 +53,12 @@ class HistoricalData:
             
             if rows >= HistoricalDataSettings['Rows']:
                 break
+
         df = pd.concat(chunks, ignore_index=True)
-    
+        df.set_index(['initial_hand', 'dealer_up'], inplace=True)  # Set multi-index on columns used in queries
+        
         end_time = time.time()
         print(f"Importing CSV took {end_time - start_time} seconds")
-
         return df
     
     def hand_simplifier(self, hand):
@@ -70,7 +79,7 @@ class HistoricalData:
         return values
     
     def check_next_move(self, inital_hand, dealer_up, df):
-        filtered_df = df.loc[(df['initial_hand'] == inital_hand) & (df['dealer_up'] == dealer_up)]        
+        filtered_df = df.loc[(df['initial_hand'] == inital_hand) & (df['dealer_up'] == dealer_up)]
         if not filtered_df.empty:
             # Convert the actions_taken column to lists
             filtered_df.loc[:, 'actions_taken'] = filtered_df['actions_taken'].apply(ast.literal_eval)
@@ -80,40 +89,77 @@ class HistoricalData:
 
             # Get the action sequence with the highest count
             most_common_action_sequence = action_counts.idxmax()
-        else:
-            most_common_action_sequence = None
+        else: # Apply basic strategy if no data is found
+            self.usedBasicStrategy = True
+            basic_strategy = BasicStrategy()
+            list = ast.literal_eval(inital_hand)
+            player_hand_value = sum(list)
+            action = basic_strategy.check_basicstrategy(player_hand_value,dealer_up)
+
+            if action == 'Hit':
+                most_common_action_sequence = ['H']
+            elif action == 'Stand':
+                most_common_action_sequence = ['S']
+            elif action == 'Double if possible, otherwise hit':
+                if self.doublingAllowed:
+                    most_common_action_sequence = ['D']
+                else:
+                    most_common_action_sequence = ['H']
+            elif action == 'Surrender if possible, otherwise hit':
+                most_common_action_sequence = ['H']
+            elif action == 'Surrender if possible, otherwise stand':
+                most_common_action_sequence = ['S']
+            else:
+                most_common_action_sequence = None
 
         return most_common_action_sequence
     
     def find_action(self, player_hand, dealer_up):
-        player_hand = self.hand_simplifier(player_hand.cards)
-        action = self.check_next_move(str(player_hand), dealer_up.value, self.df)
+        player_hand_simplified = self.hand_simplifier(player_hand.cards)
+
+        if player_hand.get_value() > 21:
+            return None
+        
+        action = self.check_next_move(str(player_hand_simplified), dealer_up.value, self.df)
         return action
     
     def simulate_game(self, player_hand, dealer_hand, deck):
-        dealer_up = dealer_hand.cards[0]    
-          
-        action = self.find_action(player_hand, dealer_up)
-
-        if action is not None:
-            action_list_len = len(action)
-        else:
-            action_list_len = 0
-
-        # TODO: Check the all action types
-            
+        action = self.find_action(player_hand, dealer_hand.cards[0])
+        action_list_len = len(action) if action else 0
+        
         for i in range(action_list_len):
             if action[i] == 'H':
                 player_hand.add_card(deck.deal())
-                continue
             elif action[i] == 'D':
-                player_hand.add_card(deck.deal())
-                continue
+                if self.doublingAllowed:
+                    player_hand.add_card(deck.deal())
+                break
             elif action[i] == 'S':
-                continue
-            else:
-                continue
-        
+                break
+
+
+        if self.usedBasicStrategy:
+            recent_action = action
+            while recent_action != None:
+                new_action = self.find_action(player_hand, dealer_hand.cards[0])
+
+                if new_action != None:  
+                    for i in range(len(new_action)):
+                        if new_action[i] == 'H':
+                            player_hand.add_card(deck.deal())
+                            recent_action = new_action
+                            continue
+                        elif new_action[i] == 'D':
+                            player_hand.add_card(deck.deal())
+                            recent_action = None
+                            continue
+                        elif new_action[i] == 'S':
+                            recent_action = None
+                        else: # surrender etc.
+                            recent_action = None
+                else:
+                    recent_action = None
+
         while dealer_hand.get_value() < 17:
             dealer_hand.add_card(deck.deal())
 
@@ -123,13 +169,16 @@ class HistoricalData:
         if player_total > 21:
             return 'Lose'
         elif dealer_total > 21 or player_total > dealer_total:
+            self.money += 200
             return 'Win'
         elif player_total == dealer_total:
+            self.money += 100
             return 'Tie'
         else:
             return 'Lose'
 
     def bj_simulation(self, deck):
+        self.money -= 100
         self.set_simulation_amount()
         player_hand = Hand()
         dealer_hand = Hand()
@@ -149,16 +198,15 @@ class HistoricalData:
             'Dealer Hand': str(dealer_hand.cards),
             'Dealer Hand Value': dealer_hand.get_value(),
             'Result': result,
-            'Action Taken' : action
+            'Action Taken' : action,
+            'Money': self.money
         }
     
     def simulate(self):
             results = []
-            wins = 0
-            ties = 0
-            loses = 0
+            wins, ties, loses = 0, 0, 0
         
-            print("Simulating game...")
+            self.money = 1000
             self.shuffle_deck()
             while len(self.main_deck.cards) >= 10:
                 result = self.bj_simulation(self.main_deck)
@@ -173,11 +221,6 @@ class HistoricalData:
                 results.append(result)
             
             #winrate = wins / (wins + ties + loses) * 100
-
-            results.append({
-                'Player Hand': '',
-                'Dealer Hand': ''
-            })
 
             df = pd.DataFrame(results)
             return df
@@ -211,5 +254,6 @@ class HistoricalData:
 
 if __name__ == "__main__":
     hd = HistoricalData()
+    hd.set_simulation_amount()
     hd.importCSV_async()
     hd.output_results()

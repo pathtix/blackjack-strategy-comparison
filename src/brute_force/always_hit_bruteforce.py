@@ -11,6 +11,9 @@ class AlwaysHitBruteForce:
         self.create_deck()
         self.simulation_amount = 10
 
+        self.money = 1000
+        self.ifHitted = False
+
     def set_simulation_amount(self):
         self.simulation_amount = AlwaysHitBruteForceSettings['Simulation Amount']
 
@@ -25,7 +28,9 @@ class AlwaysHitBruteForce:
         self.main_deck.cards = self.deck_1.cards + self.deck_2.cards
 
     def simulate_game(self, player_hand, dealer_hand, deck):
+        self.ifHitted = False
         while player_hand.get_value() <= AlwaysHitBruteForceSettings['Threshold']:
+            self.ifHitted = True
             player_hand.add_card(deck.deal())
         
         while dealer_hand.get_value() < 17:
@@ -37,13 +42,16 @@ class AlwaysHitBruteForce:
         if player_total > 21:
             return 'Lose'
         elif dealer_total > 21 or player_total > dealer_total:
+            self.money += 200
             return 'Win'
         elif player_total == dealer_total:
+            self.money += 100
             return 'Tie'
         else:
             return 'Lose'
 
     def bj_simulation(self, deck):
+        self.money -= 100
         self.set_simulation_amount()
         player_hand = Hand()
         dealer_hand = Hand()
@@ -57,18 +65,19 @@ class AlwaysHitBruteForce:
 
         return {
             'Player Hand': str(player_hand.cards),
+            'Player Hand Value': player_hand.get_value(),
             'Dealer Hand': str(dealer_hand.cards),
-            'Player Total': player_hand.get_value(),
-            'Dealer Total': dealer_hand.get_value(),
-            'Result': result
+            'Dealer Hand Value': dealer_hand.get_value(),
+            'Result': result,
+            'Action': 'H' if self.ifHitted else 'S',
+            'Money': self.money
         }
     
     def simulate(self):
         results = []
-        wins = 0
-        ties = 0
-        loses = 0
+        wins, ties, loses = 0, 0, 0
         
+        self.money = 1000
         self.shuffle_deck()
         while len(self.main_deck.cards) >= 10:
             result = self.bj_simulation(self.main_deck)
@@ -82,16 +91,12 @@ class AlwaysHitBruteForce:
 
             results.append(result)
         
-        #winrate = wins / (wins + ties + loses) * 100
-
-        results.append({
-            'Player Hand': '',
-            'Dealer Hand': '',
-            'Player Total': '',
-            'Dealer Total': ''
-        })
+        total_games = wins + ties + loses
+        winrate = (wins / total_games * 100) if total_games > 0 else 0
+        
 
         df = pd.DataFrame(results)
+        df['Win rate'] = winrate
         return df
 
     def output_results(self):
@@ -107,7 +112,7 @@ class AlwaysHitBruteForce:
 
         i = 0
         while (i < self.simulation_amount):
-            print(f"Simulation {i}")
+            print(f"Simulation  {i}")
             self.create_deck()
             df = self.simulate()
             try:

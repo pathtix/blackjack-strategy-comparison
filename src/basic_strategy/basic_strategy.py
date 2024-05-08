@@ -166,7 +166,7 @@ class BasicStrategy:
             ties = 0
             loses = 0
         
-            print("Simulating game...")
+            self.money = 1000
             self.shuffle_deck()
             while len(self.main_deck.cards) >= 10:
                 result = self.bj_simulation(self.main_deck)
@@ -189,11 +189,6 @@ class BasicStrategy:
             #print(f"Win rate: {winrate}%")
             #print(self.money)
             #winrate = wins / (wins + ties + loses) * 100
-
-            results.append({
-                'Player Hand': '',
-                'Dealer Hand': ''
-            })
 
             df = pd.DataFrame(results)
             return df

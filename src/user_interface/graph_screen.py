@@ -1,11 +1,13 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QFrame, QScrollArea, QGridLayout
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QGridLayout, QFrame
+import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 
 class GraphWindow(QWidget):
-    def __init__(self, selected_models, x_param, y_param, parent=None):
+    def __init__(self,selected_models, x_param, y_param, parent=None):
         super().__init__(parent)
         self.selected_models = selected_models
+        self.working_path = ''
         self.x_param = x_param
         self.y_param = y_param
         self.initUI()
@@ -44,10 +46,29 @@ class GraphWindow(QWidget):
         self.setWindowTitle('Graphs')
 
     def add_graph_to_frame(self, layout, model_name, x_param, y_param):
-        # Create the graph using Matplotlib
+        # Read data from a specific sheet in the Excel file
+        if model_name == 'Always hit':
+            self.working_path = 'brute_force/always_hit_results/always_hit_results.xlsx'
+        elif model_name == 'Always stand':
+            self.working_path = 'brute_force/always_stand_results/always_stand_results.xlsx'
+        elif model_name == 'Random hit/stand':
+            self.working_path = 'brute_force/random_hit_stand_results/random_hit_stand_results.xlsx'
+        elif model_name == 'Basic strategy with counting':
+            self.working_path = 'basic_strategy/basic_strategy_results/basic_strategy_results.xlsx'
+        elif model_name == 'Basic strategy without counting':
+            self.working_path = 'basic_strategy/basic_strategy_results/basic_strategy_results.xlsx'
+        elif model_name == 'Historical Data':
+            self.working_path = 'historical_data/historical_data_results/historical_data_results.xlsx'
+        elif model_name == 'RL Model':
+            self.working_path = 'reinforcement_learning/rl_results/rl_results.xlsx'
+
+        sheet_name = 'test' + '0'
+        df = pd.read_excel(self.working_path, sheet_name=sheet_name)
+        
+        # Plotting the graph using Matplotlib
         fig, ax = plt.subplots()
-        ax.plot([0, 1, 2, 3], [10, 20, 10, 30])  # Placeholder for actual data
-        ax.set_title(f'{model_name} - {x_param} vs. {y_param}')
+        ax.plot(df[y_param], df[x_param])  # Plot the data
+        ax.set_title(f'{sheet_name} - {x_param} vs. {y_param}')
         ax.set_xlabel(x_param)
         ax.set_ylabel(y_param)
 

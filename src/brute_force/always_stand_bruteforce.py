@@ -11,6 +11,8 @@ class AlwaysStandBruteForce:
         self.create_deck()
         self.simulation_amount = 10
 
+        self.money = 1000
+
     def set_simulation_amount(self):
         self.simulation_amount = AlwaysStandBruteForceSettings['Simulation Amount']
 
@@ -34,13 +36,16 @@ class AlwaysStandBruteForce:
         if player_total > 21:
             return 'Lose'
         elif dealer_total > 21 or player_total > dealer_total:
+            self.money += 200
             return 'Win'
         elif player_total == dealer_total:
+            self.money += 100
             return 'Tie'
         else:
             return 'Lose'
 
     def bj_simulation(self, deck):
+        self.money -= 100
         self.set_simulation_amount()
         player_hand = Hand()
         dealer_hand = Hand()
@@ -54,17 +59,21 @@ class AlwaysStandBruteForce:
 
         return {
             'Player Hand': str(player_hand.cards),
+            'Player Hand Value': player_hand.get_value(),
             'Dealer Hand': str(dealer_hand.cards),
-            'Player Total': player_hand.get_value(),
-            'Dealer Total': dealer_hand.get_value(),
-            'Result': result
+            'Dealer Hand Value': dealer_hand.get_value(),
+            'Result': result,
+            'Action': 'S',
+            'Money': self.money
         }
+    
     def simulate(self):
             results = []
             wins = 0
             ties = 0
             loses = 0
             
+            self.money = 1000
             self.shuffle_deck()
             while len(self.main_deck.cards) >= 10:
                 result = self.bj_simulation(self.main_deck)
@@ -79,13 +88,6 @@ class AlwaysStandBruteForce:
                 results.append(result)
             
             #winrate = wins / (wins + ties + loses) * 100
-
-            results.append({
-                'Player Hand': '',
-                'Dealer Hand': '',
-                'Player Total': '',
-                'Dealer Total': ''
-            })
 
             df = pd.DataFrame(results)
             return df
