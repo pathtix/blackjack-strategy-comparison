@@ -1,0 +1,3 @@
+# .gitignore
+etc/blackjack_simulator.csv
+src/historical_data/historical_data.db

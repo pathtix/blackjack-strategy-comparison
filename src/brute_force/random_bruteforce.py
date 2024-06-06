@@ -12,18 +12,18 @@ from settings import RandomHitStandBruteForceSettings
 
 class RandomBruteForce:
     def __init__(self):
+        self.set_simulation_settings()
         self.create_deck()
-        self.simulation_amount = 10
-        self.money = 1000  # Initialize money here
-
         self.lastAction = []
 
-    def set_simulation_amount(self):
+    def set_simulation_settings(self):
         self.simulation_amount = RandomHitStandBruteForceSettings['Simulation Amount']
+        self.money = RandomHitStandBruteForceSettings['Initial Money']
+        self.bet_amount = RandomHitStandBruteForceSettings['Bet Amount']
 
     def shuffle_deck(self):
         self.main_deck.shuffle()
-    
+
     def create_deck(self):
         self.deck_1 = Deck()
         self.deck_2 = Deck()
@@ -42,7 +42,7 @@ class RandomBruteForce:
             else:
                 self.lastAction.append('S')
                 break
-        
+
         while dealer_hand.get_value() < 17:
             dealer_hand.add_card(deck.deal())
 
@@ -52,17 +52,19 @@ class RandomBruteForce:
         if player_total > 21:
             return 'Lose'
         elif dealer_total > 21 or player_total > dealer_total:
-            self.money += 200  # Example betting amount
+            self.money += self.bet_amount * 2
             return 'Win'
+        elif player_total == 21 and len(player_hand.cards) == 2:
+            self.money += self.bet_amount * 2.5
+            return 'Blackjack'
         elif player_total == dealer_total:
-            self.money += 100
+            self.money += self.bet_amount
             return 'Tie'
         else:
             return 'Lose'
 
     def bj_simulation(self, deck):
-        self.money -= 100 # Example betting amount
-        self.set_simulation_amount()
+        self.money -= self.bet_amount
         player_hand = Hand()
         dealer_hand = Hand()
 
@@ -82,14 +84,13 @@ class RandomBruteForce:
             'Action': self.lastAction,
             'Money': self.money
         }
-    
+
     def simulate(self):
         results = []
         wins = 0
         ties = 0
         loses = 0
-        
-        self.money = 1000
+
         self.shuffle_deck()
         while len(self.main_deck.cards) >= 10:
             result = self.bj_simulation(self.main_deck)
@@ -102,30 +103,40 @@ class RandomBruteForce:
                 loses += 1
 
             results.append(result)
-        
+
         df = pd.DataFrame(results)
+        df = self.calculate_roi(df)
         return df
 
+    def calculate_roi(self, df):
+        initial_money = RandomHitStandBruteForceSettings['Initial Money']
+        df['Net Profit'] = df['Money'] - initial_money
+        df['Total Invested'] = df['Money'].apply(lambda x: x if x < 0 else initial_money)
+        df['ROI'] = (df['Net Profit'] / df['Total Invested']) * 100
+        return df
+    
     def output_results(self):
         script_dir = os.path.dirname(os.path.realpath(__file__))
         output_dir = os.path.join(script_dir, 'random_hitstand_results')
         output_filename = os.path.join(output_dir, 'random_hitstand_results.xlsx')
 
         os.makedirs(output_dir, exist_ok=True)
-
-        df_empty = pd.DataFrame()
-        df_empty.to_excel(output_filename, index=False)  # Create or clear the file
-
-        i = 0
-        while (i < self.simulation_amount):
-            print(f"Simulation {i}")
+        all_results = []
+        self.set_simulation_settings()
+        for i in range(self.simulation_amount):
             self.create_deck()
+            self.set_simulation_settings()
             df = self.simulate()
-            try:
-                with pd.ExcelWriter(output_filename, mode='a', if_sheet_exists='replace') as writer:
-                    df.to_excel(writer, sheet_name="test" + str(i), index=False)
-            except Exception as e:
-                print(f"An error occurred during simulation {i}: {e}")
-            i += 1
+            df['Simulation'] = i
+            all_results.append(df)
+
+        # Concatenate all results into a single DataFrame
+        final_df = pd.concat(all_results, ignore_index=True)
+
+        try:
+            print(f"Saving results to {output_filename}")
+            final_df.to_excel(output_filename, index=False)
+        except Exception as e:
+            print(f"An error occurred while saving results: {e}")
 
         return "Simulation complete. Check the output file for results."

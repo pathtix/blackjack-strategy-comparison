@@ -6,7 +6,8 @@ from main_screen import MainScreen
 from simulation_screen import SimulationScreen
 from stats_screen import StatsScreen
 from settings_screen import SettingsScreen
-from about_screen import AboutScreen
+
+# export PYTHONPATH="/Users/deniz/blackjack-strategy-comparison/src"
 
 class MainApplication(QMainWindow):
     def __init__(self):
@@ -27,13 +28,13 @@ class MainApplication(QMainWindow):
         self.stacked_widget.addWidget(self.welcome_screen)
         self.stacked_widget.addWidget(self.main_screen)
 
-        
+
     def show_welcome_screen(self):
         self.stacked_widget.setCurrentWidget(self.welcome_screen)
 
     def show_main_screen(self):
         self.stacked_widget.setCurrentWidget(self.main_screen)
-        
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setStyleSheet("""

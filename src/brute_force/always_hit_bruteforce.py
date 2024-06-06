@@ -8,14 +8,17 @@ from settings import AlwaysHitBruteForceSettings
 
 class AlwaysHitBruteForce:
     def __init__(self):
+        self.set_simulation_settings()
         self.create_deck()
         self.simulation_amount = 10
-
         self.money = 1000
         self.ifHitted = False
 
-    def set_simulation_amount(self):
+    def set_simulation_settings(self):
         self.simulation_amount = AlwaysHitBruteForceSettings['Simulation Amount']
+        self.money = AlwaysHitBruteForceSettings['Initial Money']
+        self.threshold = AlwaysHitBruteForceSettings['Threshold']
+        self.bet_amount = AlwaysHitBruteForceSettings['Bet Amount']
 
     def shuffle_deck(self):
         self.main_deck.shuffle()
@@ -23,16 +26,15 @@ class AlwaysHitBruteForce:
     def create_deck(self):
         self.deck_1 = Deck()
         self.deck_2 = Deck()
-
         self.main_deck = Deck()
         self.main_deck.cards = self.deck_1.cards + self.deck_2.cards
 
     def simulate_game(self, player_hand, dealer_hand, deck):
         self.ifHitted = False
-        while player_hand.get_value() <= AlwaysHitBruteForceSettings['Threshold']:
+        while player_hand.get_value() <= self.threshold:
             self.ifHitted = True
             player_hand.add_card(deck.deal())
-        
+
         while dealer_hand.get_value() < 17:
             dealer_hand.add_card(deck.deal())
 
@@ -42,17 +44,19 @@ class AlwaysHitBruteForce:
         if player_total > 21:
             return 'Lose'
         elif dealer_total > 21 or player_total > dealer_total:
-            self.money += 200
+            self.money += self.bet_amount * 2
             return 'Win'
+        elif player_total == 21 and len(player_hand.cards) == 2:
+            self.money += self.bet_amount * 2.5
+            return 'Blackjack'
         elif player_total == dealer_total:
-            self.money += 100
+            self.money += self.bet_amount
             return 'Tie'
         else:
             return 'Lose'
 
     def bj_simulation(self, deck):
-        self.money -= 100
-        self.set_simulation_amount()
+        self.money -= self.bet_amount
         player_hand = Hand()
         dealer_hand = Hand()
 
@@ -73,11 +77,17 @@ class AlwaysHitBruteForce:
             'Money': self.money
         }
     
+    def calculate_roi(self, df):
+        initial_money = AlwaysHitBruteForceSettings['Initial Money']
+        df['Net Profit'] = df['Money'] - initial_money
+        df['Total Invested'] = df['Money'].apply(lambda x: x if x < 0 else initial_money)
+        df['ROI'] = (df['Net Profit'] / df['Total Invested']) * 100
+        return df
+
     def simulate(self):
         results = []
         wins, ties, loses = 0, 0, 0
-        
-        self.money = 1000
+
         self.shuffle_deck()
         while len(self.main_deck.cards) >= 10:
             result = self.bj_simulation(self.main_deck)
@@ -90,14 +100,15 @@ class AlwaysHitBruteForce:
                 loses += 1
 
             results.append(result)
-        
+
         total_games = wins + ties + loses
         winrate = (wins / total_games * 100) if total_games > 0 else 0
-        
 
         df = pd.DataFrame(results)
-        df['Win rate'] = winrate
+        df = self.calculate_roi(df)
         return df
+    
+
 
     def output_results(self):
         script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -106,21 +117,26 @@ class AlwaysHitBruteForce:
 
         os.makedirs(output_dir, exist_ok=True)
 
-        # Create a new Excel file or clear the existing one
-        df_empty = pd.DataFrame()
-        df_empty.to_excel(output_filename, index=False)  # This creates a new file or overwrites an existing file
-
-        i = 0
-        while (i < self.simulation_amount):
-            print(f"Simulation  {i}")
+        all_results = []
+        self.set_simulation_settings()
+        for i in range(self.simulation_amount):
             self.create_deck()
+            self.set_simulation_settings()
             df = self.simulate()
-            try:
-                # Open the Excel writer in append mode now that the file definitely exists
-                with pd.ExcelWriter(output_filename, mode='a', if_sheet_exists='replace') as writer:
-                    df.to_excel(writer, sheet_name="test" + str(i), index=False)
-            except Exception as e:
-                print(f"An error occurred during simulation {i}: {e}")
-            i += 1
+            df['Simulation'] = i
+            all_results.append(df)
+
+        # Concatenate all results into a single DataFrame
+        final_df = pd.concat(all_results, ignore_index=True)
+
+        try:
+            print(f"Saving results to {output_filename}")
+            final_df.to_excel(output_filename, index=False)
+        except Exception as e:
+            print(f"An error occurred while saving results: {e}")
 
         return "Simulation complete. Check the output file for results."
+
+if __name__ == "__main__":
+    always_hit = AlwaysHitBruteForce()
+    print(always_hit.output_results())

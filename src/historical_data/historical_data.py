@@ -2,6 +2,7 @@ import pandas as pd
 import os
 import ast
 import time
+import sqlite3
 
 from resources.deck import Deck
 from resources.hand import Hand
@@ -14,20 +15,27 @@ from basic_strategy.basic_strategy import BasicStrategy
 
 class HistoricalData:
     def __init__(self):
-        self.df = None
         self.create_deck()
-        self.simulation_amount = 10
-        self.doublingAllowed = HistoricalDataSettings['Doubleing Allowed']
-        
-        self.money = 1000
+        self.df = None
         self.usedBasicStrategy = False
+        self.db_conn = None
+        self.money = None
 
-    def set_simulation_amount(self):
+        self.set_simulation_settings()
+        # testing purposes
+        self.bsTime = 0
+        self.hdTime = 0
+
+    def set_simulation_settings(self):
         self.simulation_amount = HistoricalDataSettings['Simulation Amount']
+        self.doublingAllowed = HistoricalDataSettings['Doubleing Allowed']
+        self.pathToDB = HistoricalDataSettings['Database Path']
+        self.initial_money = HistoricalDataSettings['Initial Money']
+        self.bet_amount = HistoricalDataSettings['Bet Amount']
 
     def shuffle_deck(self):
         self.main_deck.shuffle()
-    
+
     def create_deck(self):
         self.deck_1 = Deck()
         self.deck_2 = Deck()
@@ -35,32 +43,6 @@ class HistoricalData:
         self.main_deck = Deck()
         self.main_deck.cards = self.deck_1.cards + self.deck_2.cards
 
-    def importCSV_async(self):
-        self.df = self.importCSV()
-
-    def importCSV(self):
-        start_time = time.time()
-        print("Importing CSV...")
-        chunksize = 100000
-        chunks = []
-        rows = 0
-
-        cols_to_keep = ['initial_hand', 'dealer_up', 'actions_taken']
-
-        for chunk in pd.read_csv(HistoricalDataSettings['Data Source'], usecols=cols_to_keep, chunksize=chunksize):
-            chunks.append(chunk)
-            rows += chunk.shape[0]
-            
-            if rows >= HistoricalDataSettings['Rows']:
-                break
-
-        df = pd.concat(chunks, ignore_index=True)
-        df.set_index(['initial_hand', 'dealer_up'], inplace=True)  # Set multi-index on columns used in queries
-        
-        end_time = time.time()
-        print(f"Importing CSV took {end_time - start_time} seconds")
-        return df
-    
     def hand_simplifier(self, hand):
         face_cards = ['King', 'Queen', 'Jack']
         values = []
@@ -77,24 +59,21 @@ class HistoricalData:
                 values.append(int(card_name))  # Convert the card name to an integer
 
         return values
-    
-    def check_next_move(self, inital_hand, dealer_up, df):
-        filtered_df = df.loc[(df['initial_hand'] == inital_hand) & (df['dealer_up'] == dealer_up)]
-        if not filtered_df.empty:
-            # Convert the actions_taken column to lists
-            filtered_df.loc[:, 'actions_taken'] = filtered_df['actions_taken'].apply(ast.literal_eval)
 
-            first_actions = filtered_df['actions_taken'].apply(lambda x: x[0] if x else None)
-            action_counts = first_actions.value_counts()
+    def check_next_move(self, key):
+        query = f"SELECT actions_taken FROM historical_data WHERE initial_hand = ? AND dealer_up = ? LIMIT 1"
+        cursor = self.db_conn.cursor()
+        cursor.execute(query, (key[0], key[1]))
+        result = cursor.fetchone()
 
-            # Get the action sequence with the highest count
-            most_common_action_sequence = action_counts.idxmax()
-        else: # Apply basic strategy if no data is found
+        if result:
+            return result[0]
+        else:
             self.usedBasicStrategy = True
             basic_strategy = BasicStrategy()
-            list = ast.literal_eval(inital_hand)
+            list = ast.literal_eval(key[0])
             player_hand_value = sum(list)
-            action = basic_strategy.check_basicstrategy(player_hand_value,dealer_up)
+            action = basic_strategy.check_basicstrategy(player_hand_value,key[1])
 
             if action == 'Hit':
                 most_common_action_sequence = ['H']
@@ -111,39 +90,41 @@ class HistoricalData:
                 most_common_action_sequence = ['S']
             else:
                 most_common_action_sequence = None
-
         return most_common_action_sequence
-    
+
     def find_action(self, player_hand, dealer_up):
         player_hand_simplified = self.hand_simplifier(player_hand.cards)
-
         if player_hand.get_value() > 21:
             return None
-        
-        action = self.check_next_move(str(player_hand_simplified), dealer_up.value, self.df)
+
+        key = (str(player_hand_simplified), dealer_up.value)
+        action = self.check_next_move(key)
         return action
-    
+
     def simulate_game(self, player_hand, dealer_hand, deck):
         action = self.find_action(player_hand, dealer_hand.cards[0])
         action_list_len = len(action) if action else 0
-        
+        double_down = False
+
         for i in range(action_list_len):
             if action[i] == 'H':
                 player_hand.add_card(deck.deal())
+                continue
             elif action[i] == 'D':
                 if self.doublingAllowed:
                     player_hand.add_card(deck.deal())
-                break
+                    double_down = True
+                    self.money -= self.bet_amount
+                    break
             elif action[i] == 'S':
                 break
-
 
         if self.usedBasicStrategy:
             recent_action = action
             while recent_action != None:
                 new_action = self.find_action(player_hand, dealer_hand.cards[0])
 
-                if new_action != None:  
+                if new_action != None:
                     for i in range(len(new_action)):
                         if new_action[i] == 'H':
                             player_hand.add_card(deck.deal())
@@ -151,8 +132,9 @@ class HistoricalData:
                             continue
                         elif new_action[i] == 'D':
                             player_hand.add_card(deck.deal())
-                            recent_action = None
-                            continue
+                            double_down = True
+                            self.money -= self.bet_amount
+                            break
                         elif new_action[i] == 'S':
                             recent_action = None
                         else: # surrender etc.
@@ -169,17 +151,22 @@ class HistoricalData:
         if player_total > 21:
             return 'Lose'
         elif dealer_total > 21 or player_total > dealer_total:
-            self.money += 200
+            self.money += self.bet_amount * 2
             return 'Win'
+        elif (dealer_total > 21 or player_total > dealer_total) and double_down:
+            self.money += self.bet_amount * 4
+            return 'Win'
+        elif player_total == 21 and len(player_hand.cards) == 2:
+            self.money += self.bet_amount * 2.5
+            return 'Blackjack'
         elif player_total == dealer_total:
-            self.money += 100
+            self.money += self.bet_amount
             return 'Tie'
         else:
             return 'Lose'
 
     def bj_simulation(self, deck):
-        self.money -= 100
-        self.set_simulation_amount()
+        self.money -= self.bet_amount
         player_hand = Hand()
         dealer_hand = Hand()
 
@@ -189,7 +176,7 @@ class HistoricalData:
         dealer_hand.add_card(deck.deal())
 
         action = self.find_action(player_hand, dealer_hand.cards[0])
-        
+
         result = self.simulate_game(player_hand, dealer_hand, deck)
 
         return {
@@ -202,12 +189,19 @@ class HistoricalData:
             'Money': self.money
         }
     
+    def calculate_roi(self, df):
+        initial_money = HistoricalDataSettings['Initial Money']
+        df['Net Profit'] = df['Money'] - initial_money
+        df['Total Invested'] = df['Money'].apply(lambda x: x if x < 0 else initial_money)
+        df['ROI'] = (df['Net Profit'] / df['Total Invested']) * 100
+        return df
+
     def simulate(self):
             results = []
             wins, ties, loses = 0, 0, 0
-        
-            self.money = 1000
+
             self.shuffle_deck()
+            self.money = self.initial_money
             while len(self.main_deck.cards) >= 10:
                 result = self.bj_simulation(self.main_deck)
 
@@ -219,41 +213,40 @@ class HistoricalData:
                     loses += 1
 
                 results.append(result)
-            
+
             #winrate = wins / (wins + ties + loses) * 100
 
             df = pd.DataFrame(results)
+            df = self.calculate_roi(df)
             return df
 
     def output_results(self):
+        self.set_simulation_settings()
+        if not self.db_conn:
+            print("Connecting to database...")
+            self.db_conn = sqlite3.connect(self.pathToDB, check_same_thread=False)
+            print("Connected to database.")
+
         script_dir = os.path.dirname(os.path.realpath(__file__))
         output_dir = os.path.join(script_dir, 'historical_data_results')
         output_filename = os.path.join(output_dir, 'historical_data_results.xlsx')
 
         os.makedirs(output_dir, exist_ok=True)
-
-        # Create a new Excel file or clear the existing one
-        df_empty = pd.DataFrame()
-        df_empty.to_excel(output_filename, index=False)  # This creates a new file or overwrites an existing file
-
-        i = 0
-        while (i < self.simulation_amount):
-            print(f"Simulation {i}")
+        all_results = []
+        for i in range(self.simulation_amount):
             self.create_deck()
+            self.set_simulation_settings()
             df = self.simulate()
-            try:
-                # Open the Excel writer in append mode now that the file definitely exists
-                with pd.ExcelWriter(output_filename, mode='a', if_sheet_exists='replace') as writer:
-                    df.to_excel(writer, sheet_name="test" + str(i), index=False)
-            except Exception as e:
-                print(f"An error occurred during simulation {i}: {e}")
-            i += 1
+            df['Simulation'] = i
+            all_results.append(df)
+
+        # Concatenate all results into a single DataFrame
+        final_df = pd.concat(all_results, ignore_index=True)
+
+        try:
+            print(f"Saving results to {output_filename}")
+            final_df.to_excel(output_filename, index=False)
+        except Exception as e:
+            print(f"An error occurred while saving results: {e}")
 
         return "Simulation complete. Check the output file for results."
-    
-
-if __name__ == "__main__":
-    hd = HistoricalData()
-    hd.set_simulation_amount()
-    hd.importCSV_async()
-    hd.output_results()

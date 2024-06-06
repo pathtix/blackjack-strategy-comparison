@@ -3,12 +3,15 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QPixmap, QMovie
 
 from basic_strategy.basic_strategy import BasicStrategy
+from basic_strategy.basic_strategy_with_counting import CountingStrategy
 
 from brute_force.always_hit_bruteforce import AlwaysHitBruteForce
 from brute_force.always_stand_bruteforce import AlwaysStandBruteForce
 from brute_force.random_bruteforce import RandomBruteForce
 
 from historical_data.historical_data import HistoricalData
+
+from reincforment_learing.reincforcment_learning import ReinforcementLearning
 
 from user_interface.simulation_worker import SimulationWorker
 
@@ -24,17 +27,19 @@ class SimulationScreen(QWidget):
         self.csv_imported = False  # Flag to check if CSV has been imported
 
         self.basic_strategy = BasicStrategy()
+        self.counting_strategy = CountingStrategy()
         self.always_hit_bruteforce = AlwaysHitBruteForce()
         self.always_stand_bruteforce = AlwaysStandBruteForce()
         self.random_bruteforce = RandomBruteForce()
         self.historical_data = HistoricalData()
+        self.rl_model = ReinforcementLearning()
 
-        self.setStyleSheet(""" 
+        self.setStyleSheet("""
             #frame {
                 background-color: #2d3848;
                 border-radius: 5px;
             }
-                           """)
+        """)
 
     def setupUI(self):
         self.layout = QGridLayout(self)
@@ -82,7 +87,7 @@ class SimulationScreen(QWidget):
 
         selected_num = int(self.comboBox.currentText())
         print(f"{selected_num} was selected.")
-        
+
         # Hide the combobox, run button, and label
         self.comboBox.setVisible(False)
         self.runButton.setVisible(False)
@@ -133,29 +138,10 @@ class SimulationScreen(QWidget):
                 }
             """)
             frame_layout.addWidget(play_button, 0, 1, alignment=Qt.AlignmentFlag.AlignCenter)
-            
-            settings_button = QPushButton("⛭", frame)
-            settings_button.setFont(QFont('Arial', 12))  # Set the font size to ensure the button is square
-            settings_button.setStyleSheet("""
-                QPushButton {
-                    font-size: 14pt;
-                    border-radius: 15px;
-                    min-width: 30px;
-                    min-height: 30px;
-                    max-width: 30px;
-                    max-height: 30px;
-                }
-                QPushButton:hover {
-                    background-color: #64c0df;
-                }
-            """)
-
-            frame_layout.addWidget(settings_button, 0, 2, alignment=Qt.AlignmentFlag.AlignCenter)
 
 
             # Connect the button's clicked signal
             play_button.clicked.connect(lambda ch, index=i: self.run_script(index))
-            settings_button.clicked.connect(lambda ch, index=i: self.setting_script(index))
 
             # Calculate row and column
             row = (i // columns) + 1  # Start adding from the second row
@@ -176,30 +162,21 @@ class SimulationScreen(QWidget):
         script_name = combobox.currentText()
         print(f"Run button for combobox at index {index} clicked to run script: {script_name}")
 
-        
-                
+
+
         script_functions = {
             "Always hit brute force": self.always_hit_bruteforce.output_results,
             "Always stand brute force": self.always_stand_bruteforce.output_results,
             "Random hit/stand brute force": self.random_bruteforce.output_results,
             "Basic Strategy without counting" : self.basic_strategy.output_results,
-            "Basic Strategy with counting" : self.basic_strategy.output_results, # will implement counting later
-            "Historical Data": [self.historical_data.importCSV_async, self.historical_data.output_results],
+            "Basic Strategy with counting" : self.counting_strategy.output_results,
+            "Historical Data": self.historical_data.output_results,
+            "RL Model": self.rl_model.output_results
         }
-    
+
         function_to_run = script_functions.get(script_name)
-        if script_name == "Historical Data":
-            if not self.csv_imported:
-                print("Importing CSV for historical data")
-                worker = SimulationWorker(self.historical_data.importCSV_async)
-                worker.finished.connect(lambda message: self.run_historical_data(script_name, script_functions))
-                worker.error.connect(lambda e: print(f"Error: {e}"))
-                worker.start()
-                self.threads.append(worker)
-                self.csv_imported = True  # Set flag after successful import
-            else:
-                self.run_historical_data(script_name, script_functions)
-        elif function_to_run:
+
+        if function_to_run:
             # Create a thread to run the simulation
             worker = SimulationWorker(function_to_run)
             worker.finished.connect(self.on_simulation_complete)
@@ -207,16 +184,8 @@ class SimulationScreen(QWidget):
             worker.start()  # Start the thread
             self.threads.append(worker)  # Keep track of the thread
 
-    def run_historical_data(self, script_name, script_functions):
-        worker2 = SimulationWorker(script_functions[script_name][1])
-        worker2.finished.connect(self.on_simulation_complete)
-        worker2.error.connect(lambda e: print(f"Error: {e}"))
-        worker2.start()
-        self.threads.append(worker2)
-
     def setting_script(self, index):
         combobox = self.comboboxes[index]
-        # Now you can safely get the script name
         script_name = combobox.currentText()
         print(f"Setting button for combobox at index {index}")
 

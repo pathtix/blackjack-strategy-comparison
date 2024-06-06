@@ -1,4 +1,5 @@
 from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtWidgets import QApplication
 
 class SimulationWorker(QThread):
     finished = pyqtSignal(str)  # Signal to emit completion with a message
@@ -9,6 +10,7 @@ class SimulationWorker(QThread):
         self.function = function
         self.args = args if args is not None else []
 
+        
     def run(self):
         try:
             result = self.function(*self.args)

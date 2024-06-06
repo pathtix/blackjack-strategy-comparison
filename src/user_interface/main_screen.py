@@ -8,41 +8,37 @@ from PyQt6.QtCore import Qt
 from simulation_screen import SimulationScreen
 from stats_screen import StatsScreen
 from settings_screen import SettingsScreen
-from about_screen import AboutScreen
 
 class MainScreen(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
-        
+
         self.main_widget = QWidget(self)
         self.setCentralWidget(self.main_widget)
-        
+
         main_layout = QHBoxLayout(self.main_widget)
         sidebar = QVBoxLayout()
         main_content = QGridLayout()
-        
+
         stacked_widget = QStackedWidget()
         stacked_widget.addWidget(SimulationScreen())
         stacked_widget.addWidget(StatsScreen())
         stacked_widget.addWidget(SettingsScreen())
-        stacked_widget.addWidget(AboutScreen())
         stacked_widget.setObjectName("StackedWidget")
 
         # Define the buttons
         simulations_button = self.create_button('Simulations', stacked_widget, 0)
         stats_button = self.create_button('Stats', stacked_widget, 1)
         settings_button = self.create_button('Settings', stacked_widget, 2)
-        about_button = self.create_button('About', stacked_widget, 3)
 
         # Add buttons to the sidebar
         sidebar.addWidget(simulations_button)
         sidebar.addWidget(stats_button)
         sidebar.addWidget(settings_button)
-        sidebar.addWidget(about_button)
 
         main_content.addWidget(stacked_widget)
         main_content.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
+
         # Add a frame around the sidebar to distinguish it from the content area
         sidebar_frame = QFrame()
         sidebar_frame.setFrameShape(QFrame.Shape.Box)
