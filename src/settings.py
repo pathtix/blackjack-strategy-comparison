@@ -34,7 +34,7 @@ BasicStrategyWithoutCountingSettings = {
 
 HistoricalDataSettings = {
     'Initial Money' : 1000,
-    'Simulation Amount' : 1,
+    'Simulation Amount' : 10,
     'Data Source' : "etc/blackjack_simulator.csv",
     'Database Path' : 'src/historical_data/historical_data.db',
     'Doubleing Allowed' : False,

@@ -59,10 +59,9 @@ class GraphWindow(QWidget):
 
     def add_graph_to_frame(self, layout, model_name, x_param, y_param):
         if x_param == 'Money':
-            if y_param == 'Games Played per Simulation':
-                self.createMoneyVsGamesPlayedPerSimulation(layout, model_name)
-
-            elif y_param == 'Win Rate':
+            #if y_param == 'Games Played per Simulation':
+            #    self.createMoneyVsGamesPlayedPerSimulation(layout, model_name)
+            if y_param == 'Win Rate':
                 self.createMoneyVsWinRate(layout, model_name)
 
             elif y_param == 'Loss Rate':
@@ -168,13 +167,17 @@ class GraphWindow(QWidget):
             avg_lose_rate = loses / total_games * 100 if total_games > 0 else 0
 
             avg_lose_rates.append(avg_lose_rate)
-            avg_moneys.append(data['Money'].mean())
-            simulation_names.append(f'Simulation {simulation_number}')
+
+            cmap = plt.get_cmap('RdYlGn_r')
+            color = cmap(avg_lose_rate / 100)
+            ax.scatter(data['Money'].mean(), avg_lose_rate, label=f'Simulation {simulation_number}', alpha=0.6, color=color)
 
         ax.set_xlabel('Average Money')
-        ax.set_ylabel('Average Lose Rate (%)')
-        ax.set_title(f'Average Lose Rate vs Average Money for {model_name} Simulations')
+        ax.set_ylabel('Lose Rate (%)')
+        ax.set_title(f'{model_name} Average Money vs Lose Rate ')
         ax.grid(True)
+
+        ax.set_ylim([0, 100])
 
         canvas = FigureCanvas(fig)
         toolbar = QVBoxLayout()
@@ -333,7 +336,6 @@ class GraphWindow(QWidget):
         fig = Figure()
         ax = fig.add_subplot(111)
 
-        # Group by simulation and calculate the total games played and win rate for each simulation
         grouped = df.groupby('Simulation')
         total_simulations = len(grouped)
         avg_win_rates = []
@@ -375,6 +377,7 @@ class GraphWindow(QWidget):
 
         # Group by simulation and calculate the lose rate for each simulation
         grouped = df.groupby('Simulation')
+        total_simulations = len(grouped)
         avg_lose_rates = []
 
         for simulation_number, data in grouped:
@@ -385,14 +388,17 @@ class GraphWindow(QWidget):
             avg_lose_rates.append(avg_lose_rate)
 
         # Create density plot
-        sns.kdeplot(avg_lose_rates, ax=ax, shade=True, color="r")
-
-        ax.set_xlabel('Lose Rate (%)')
-        ax.set_ylabel('Density')
-        ax.set_title(f'{model_name} Density of Lose Rates Across Simulations')
+        scatter = ax.scatter(range(total_simulations), avg_lose_rates, c=avg_lose_rates, cmap='RdYlGn_r', alpha=0.6)
+        
+        ax.set_xlabel('Simulation Number')
+        ax.set_ylabel('Average Lose Rate (%)')
+        ax.set_title(f'{model_name} Total Simulations by Lose Rate')
         ax.grid(True)
 
         ax.set_ylim([0, 100])
+
+        cbar = fig.colorbar(scatter, ax=ax)
+        cbar.set_label('Win Rate (%)')
 
         canvas = FigureCanvas(fig)
         toolbar = QVBoxLayout()
@@ -400,6 +406,7 @@ class GraphWindow(QWidget):
         layout.addLayout(toolbar)
 
         layout.addWidget(canvas)
+        
 
     def createTotalSimulationsVsGamesPlayedPerSimulation(self, layout, model_name):
         file_location = FileLocations[model_name].value

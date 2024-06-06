@@ -24,7 +24,6 @@ class SimulationScreen(QWidget):
 
         self.gridAmount = 0
         self.threads = []  # List to hold active threads
-        self.csv_imported = False  # Flag to check if CSV has been imported
 
         self.basic_strategy = BasicStrategy()
         self.counting_strategy = CountingStrategy()
@@ -180,8 +179,9 @@ class SimulationScreen(QWidget):
             worker = SimulationWorker(function_to_run)
             worker.finished.connect(self.on_simulation_complete)
             worker.finished.connect(worker.deleteLater)  # Ensure thread cleanup
-            worker.start()  # Start the thread
             self.threads.append(worker)  # Keep track of the thread
+            worker.start()  # Start the thread
+            
 
     def setting_script(self, index):
         combobox = self.comboboxes[index]

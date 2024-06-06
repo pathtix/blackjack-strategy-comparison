@@ -85,8 +85,7 @@ class BasicStrategy:
 
         while action == 'Hit' or action == 'Double if possible, otherwise hit' or action == 'Surrender if possible, otherwise hit':
             if action == 'Double if possible, otherwise hit':
-                if (self.is_double_allowed and self.money >= self.bet_amount):
-                    if len(player_hand.cards) == 2:  # Typically doubling down is only allowed on the first move
+                if len(player_hand.cards) == 2:  # Typically doubling down is only allowed on the first move
                         action_list.append('Doubled')
                         self.money -= self.bet_amount
                         player_hand.add_card(deck.deal())

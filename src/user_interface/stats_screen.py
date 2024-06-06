@@ -18,6 +18,12 @@ class StatsScreen(QWidget):
         self.working_path = ''
         self.df = None
 
+        self.y_axis_combo = QComboBox()
+        self.x_axis_combo = QComboBox()
+
+        self.x_axis_combo.currentIndexChanged.connect(self.update_y_axis_combo)
+
+
         self.graph_windows = []
 
         self.setupUI()
@@ -109,7 +115,6 @@ class StatsScreen(QWidget):
 
         x_axis_layout = QHBoxLayout()
         x_axis_label = QLabel("X-axis:")
-        self.x_axis_combo = QComboBox()
         self.x_axis_combo.addItems(['Money', 'Games Played per Simulation', 'Total Simulations', 'Simulation'])  # Add more options as needed
         x_axis_layout.addWidget(x_axis_label)
         x_axis_layout.addWidget(self.x_axis_combo)
@@ -117,8 +122,7 @@ class StatsScreen(QWidget):
 
         y_axis_layout = QHBoxLayout()
         y_axis_label = QLabel("Y-axis:")
-        self.y_axis_combo = QComboBox()
-        self.y_axis_combo.addItems(['Win Rate', 'Loss Rate', 'Games Played per Simulation', 'Money', 'Total Simulations', 'Average ROI'])  # Add more options as needed
+
         y_axis_layout.addWidget(y_axis_label)
         y_axis_layout.addWidget(self.y_axis_combo)
         right_layout.addLayout(y_axis_layout)
@@ -167,6 +171,21 @@ class StatsScreen(QWidget):
         self.destroyed.connect(self.graph_window.close)
         self.graph_window.show()
         self.graph_windows.append(self.graph_window)
+
+    def update_y_axis_combo(self):
+        self.y_axis_combo.clear()
+
+        if self.x_axis_combo.currentText() == 'Simulation':
+            self.y_axis_combo.addItems(['Average ROI'])
+
+        elif self.x_axis_combo.currentText() == 'Money':
+            self.y_axis_combo.addItems(['Win Rate', 'Loss Rate'])
+
+        elif self.x_axis_combo.currentText() == 'Games Played per Simulation':
+            self.y_axis_combo.addItems(['Win Rate', 'Loss Rate'])
+
+        elif self.x_axis_combo.currentText() == 'Total Simulations':
+            self.y_axis_combo.addItems(['Win Rate', 'Loss Rate', 'Games Played per Simulation', 'Money'])
 
     def load_data(self):
         selected_model = self.data_combo.currentText()
