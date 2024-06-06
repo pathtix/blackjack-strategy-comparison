@@ -18,7 +18,7 @@ class BasicStrategy:
     def set_simulation_settings(self):
         self.simulation_amount = BasicStrategyWithoutCountingSettings['Simulation Amount']
         self.money = BasicStrategyWithoutCountingSettings['Initial Money']
-        self.isDoubleAllowed = BasicStrategyWithoutCountingSettings['Doubleing Allowed']
+        self.is_double_allowed = BasicStrategyWithoutCountingSettings['Doubleing Allowed']
         self.bet_amount = BasicStrategyWithoutCountingSettings['Bet Amount']
 
     def shuffle_deck(self):
@@ -85,12 +85,13 @@ class BasicStrategy:
 
         while action == 'Hit' or action == 'Double if possible, otherwise hit' or action == 'Surrender if possible, otherwise hit':
             if action == 'Double if possible, otherwise hit':
-                if len(player_hand.cards) == 2:  # Typically doubling down is only allowed on the first move
-                    action_list.append('Doubled')
-                    self.money -= self.bet_amount
-                    player_hand.add_card(deck.deal())
-                    double_down = True
-                    break  # Player must stand after doubling down
+                if (self.is_double_allowed and self.money >= self.bet_amount):
+                    if len(player_hand.cards) == 2:  # Typically doubling down is only allowed on the first move
+                        action_list.append('Doubled')
+                        self.money -= self.bet_amount
+                        player_hand.add_card(deck.deal())
+                        double_down = True
+                        break  # Player must stand after doubling down
                 else:
                     action = 'Hit'  # Change action to Hit if double down is not possible
                     action_list.append('Hit')

@@ -12,7 +12,7 @@ class AlwaysHitBruteForce:
         self.create_deck()
         self.simulation_amount = 10
         self.money = 1000
-        self.ifHitted = False
+        self.if_hitted = False
 
     def set_simulation_settings(self):
         self.simulation_amount = AlwaysHitBruteForceSettings['Simulation Amount']
@@ -30,9 +30,9 @@ class AlwaysHitBruteForce:
         self.main_deck.cards = self.deck_1.cards + self.deck_2.cards
 
     def simulate_game(self, player_hand, dealer_hand, deck):
-        self.ifHitted = False
+        self.if_hitted = False
         while player_hand.get_value() <= self.threshold:
-            self.ifHitted = True
+            self.if_hitted = True
             player_hand.add_card(deck.deal())
 
         while dealer_hand.get_value() < 17:
@@ -73,7 +73,7 @@ class AlwaysHitBruteForce:
             'Dealer Hand': str(dealer_hand.cards),
             'Dealer Hand Value': dealer_hand.get_value(),
             'Result': result,
-            'Action': 'H' if self.ifHitted else 'S',
+            'Action': 'H' if self.if_hitted else 'S',
             'Money': self.money
         }
     

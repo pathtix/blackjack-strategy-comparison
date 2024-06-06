@@ -158,7 +158,6 @@ class SimulationScreen(QWidget):
 
     def run_script(self, index):
         combobox = self.comboboxes[index]
-        # Now you can safely get the script name
         script_name = combobox.currentText()
         print(f"Run button for combobox at index {index} clicked to run script: {script_name}")
 

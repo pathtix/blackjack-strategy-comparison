@@ -2,8 +2,8 @@ from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtWidgets import QApplication
 
 class SimulationWorker(QThread):
-    finished = pyqtSignal(str)  # Signal to emit completion with a message
-    error = pyqtSignal(str)  # Signal to handle errors as string for simplicity
+    finished = pyqtSignal(str)
+    error = pyqtSignal(str)
 
     def __init__(self, function, args=None):
         super().__init__()
@@ -14,6 +14,6 @@ class SimulationWorker(QThread):
     def run(self):
         try:
             result = self.function(*self.args)
-            self.finished.emit(f"Success: {str(result)}")  # Send success message
+            self.finished.emit(f"Success: {str(result)}")
         except Exception as e:
-            self.error.emit(str(e))  # Send error message as string
+            self.error.emit(str(e))

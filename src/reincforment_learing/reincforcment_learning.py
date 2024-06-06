@@ -71,13 +71,14 @@ class ReinforcementLearning:
                     return 'Lose', action_list
                 action = self.choose_action((player_card_value, dealer_up_value))
         elif action == 2:  # Double
-            self.money -= self.bet_amount
-            player_hand.add_card(deck.deal())
-            player_card_value = player_hand.get_value()
-            action_list.append('Double')
-            double_down = True
-            if player_card_value > 21:
-                return 'Lose', action_list
+            if self.money >= self.bet_amount:
+                self.money -= self.bet_amount
+                player_hand.add_card(deck.deal())
+                player_card_value = player_hand.get_value()
+                action_list.append('Double')
+                double_down = True
+                if player_card_value > 21:
+                    return 'Lose', action_list
         else:
             action_list.append('Stand')
 

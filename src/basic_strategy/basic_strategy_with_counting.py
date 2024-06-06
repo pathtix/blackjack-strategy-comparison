@@ -20,7 +20,7 @@ class CountingStrategy(BasicStrategy):
     def set_simulation_settings(self):
         self.simulation_amount = BasicStrategyWithCountingSettings['Simulation Amount']
         self.money = BasicStrategyWithCountingSettings['Initial Money']
-        self.isDoubleAllowed = BasicStrategyWithCountingSettings['Doubleing Allowed']
+        self.is_double_allowed = BasicStrategyWithCountingSettings['Doubleing Allowed']
         self.minimum_bet = BasicStrategyWithCountingSettings['Minimum Bet']
         self.maximum_bet = BasicStrategyWithCountingSettings['Maximum Bet']
 
@@ -64,12 +64,13 @@ class CountingStrategy(BasicStrategy):
 
         while action == 'Hit' or action == 'Double if possible, otherwise hit' or action == 'Surrender if possible, otherwise hit':
             if action == 'Double if possible, otherwise hit':
-                if len(player_hand.cards) == 2:  # Typically doubling down is only allowed on the first move
-                    action_list.append('Doubled')
-                    self.money -= bet_amount
-                    player_hand.add_card(deck.deal())
-                    double_down = True
-                    break  # Player must stand after doubling down
+                if (self.is_double_allowed and self.money >= bet_amount):
+                    if len(player_hand.cards) == 2:  # Typically doubling down is only allowed on the first move
+                        action_list.append('Doubled')
+                        self.money -= bet_amount
+                        player_hand.add_card(deck.deal())
+                        double_down = True
+                        break  # Player must stand after doubling down
                 else:
                     action = 'Hit'
                     action_list.append('Hit')

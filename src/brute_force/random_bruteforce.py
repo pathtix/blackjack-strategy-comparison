@@ -14,7 +14,7 @@ class RandomBruteForce:
     def __init__(self):
         self.set_simulation_settings()
         self.create_deck()
-        self.lastAction = []
+        self.last_action = []
 
     def set_simulation_settings(self):
         self.simulation_amount = RandomHitStandBruteForceSettings['Simulation Amount']
@@ -32,15 +32,15 @@ class RandomBruteForce:
         self.main_deck.cards = self.deck_1.cards + self.deck_2.cards
 
     def simulate_game(self, player_hand, dealer_hand, deck):
-        self.lastAction = []
+        self.last_action = []
         while True:
             action = random.choice(['H', 'S'])
             player_total = player_hand.get_value()
             if action == 'H' and player_total <= 21:
                 player_hand.add_card(deck.deal())
-                self.lastAction.append('H')
+                self.last_action.append('H')
             else:
-                self.lastAction.append('S')
+                self.last_action.append('S')
                 break
 
         while dealer_hand.get_value() < 17:
@@ -81,7 +81,7 @@ class RandomBruteForce:
             'Dealer Hand': str(dealer_hand.cards),
             'Dealer Hand Value': dealer_hand.get_value(),
             'Result': result,
-            'Action': self.lastAction,
+            'Action': self.last_action,
             'Money': self.money
         }
 

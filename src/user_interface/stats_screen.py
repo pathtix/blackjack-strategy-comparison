@@ -325,7 +325,7 @@ class StatsScreen(QWidget):
         if self.current_simulation_number < total_simulations - 1:
             self.current_simulation_number += 1
         else:
-            self.current_simulation_number = 0  # Optionally reset to the first simulation or handle differently
+            self.current_simulation_number = 0
 
         print(f"Loading data for simulation number: {self.current_simulation_number}")
         self.display_simulation(self.current_simulation_number)
@@ -336,7 +336,7 @@ class StatsScreen(QWidget):
         if self.current_simulation_number > 0:
             self.current_simulation_number -= 1
         else:
-            self.current_simulation_number = total_simulations - 1  # Optionally reset to the last simulation or handle differently
+            self.current_simulation_number = total_simulations - 1 
 
         print(f"Loading data for simulation number: {self.current_simulation_number}")
         self.display_simulation(self.current_simulation_number)
@@ -384,8 +384,5 @@ class StatsScreen(QWidget):
     def update_button_states(self):
         total_simulations = self.df['Simulation'].nunique()
 
-        # Disable the "Previous" button if on the first simulation, enable otherwise
         self.previous_button.setEnabled(self.current_simulation_number > 0)
-
-        # Disable the "Next" button if on the last simulation, enable otherwise
         self.next_button.setEnabled(self.current_simulation_number < total_simulations - 1)

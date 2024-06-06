@@ -9,6 +9,15 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT
 
 from enum import Enum
 
+class FileLocations(Enum):
+    ALWAYS_HIT = 'src/brute_force/always_hit_results/always_hit_results.xlsx'
+    ALWAYS_STAND = 'src/brute_force/always_stand_results/always_stand_results.xlsx'
+    RANDOM_HIT_STAND = 'src/brute_force/random_hitstand_results/random_hitstand_results.xlsx'
+    BASIC_STRATEGY_WITHOUTCOUNTING = 'src/basic_strategy/basic_strategy_results/basic_strategy_results.xlsx'
+    BASIC_STRATEGY_WITHCOUNTING = 'src/basic_strategy/counting_strategy_results/counting_strategy_results.xlsx'
+    HISTORICAL_DATA = 'src/historical_data/historical_data_results/historical_data_results.xlsx'
+    RL_MODEL = 'src/reincforment_learing/reincforment_learing_results/reincforment_learing_results.xlsx'
+
 class GraphWindow(QWidget):
     def __init__(self,selected_models, x_param, y_param, parent=None):
         super().__init__(parent)
@@ -18,22 +27,21 @@ class GraphWindow(QWidget):
         self.initUI()
 
     def initUI(self):
-        self.setStyleSheet("background-color: #3a4556;")  # Set the background color of the window
+        self.setStyleSheet("background-color: #3a4556;")
 
         layout = QVBoxLayout()
-        scroll_area = QScrollArea(self)  # Use a scroll area to manage multiple graphs
-        scroll_widget = QWidget()  # This widget will contain all the frames
+        scroll_area = QScrollArea(self)
+        scroll_widget = QWidget()
         grid_layout = QGridLayout(scroll_widget)
 
-        # Number of columns is fixed to 3 for your case
         cols = 3
         num_models = len(self.selected_models)
-        rows = (num_models + cols - 1) // cols  # Calculate required rows
+        rows = (num_models + cols - 1) // cols
 
         for index, model_name in enumerate(self.selected_models):
             frame = QFrame(scroll_widget)
             frame.setFrameShape(QFrame.Shape.StyledPanel)
-            frame.setStyleSheet("QFrame { background-color: #2d3848; border-radius: 5px; }")  # Set the frame color
+            frame.setStyleSheet("QFrame { background-color: #2d3848; border-radius: 5px; }")
             frame_layout = QVBoxLayout()
             self.add_graph_to_frame(frame_layout, model_name, self.x_param, self.y_param)
             frame.setLayout(frame_layout)
@@ -44,9 +52,8 @@ class GraphWindow(QWidget):
         layout.addWidget(scroll_area)
         self.setLayout(layout)
 
-        # Set the window height dynamically based on the number of rows
-        base_height = 400  # Height for one row
-        self.resize(1200, base_height * rows)  # Adjust width if necessary
+        base_height = 400
+        self.resize(1200, base_height * rows)
 
         self.setWindowTitle('Graphs')
 
@@ -54,10 +61,13 @@ class GraphWindow(QWidget):
         if x_param == 'Money':
             if y_param == 'Games Played per Simulation':
                 self.createMoneyVsGamesPlayedPerSimulation(layout, model_name)
+
             elif y_param == 'Win Rate':
                 self.createMoneyVsWinRate(layout, model_name)
+
             elif y_param == 'Loss Rate':
                 self.createMoneyVsLoseRate(layout, model_name)
+                
             elif y_param == 'Total Simulations':
                 self.createMoneyVsTotalSimulations(layout, model_name)
 
@@ -450,11 +460,3 @@ class GraphWindow(QWidget):
         
         layout.addWidget(canvas)
 
-class FileLocations(Enum):
-    ALWAYS_HIT = 'src/brute_force/always_hit_results/always_hit_results.xlsx'
-    ALWAYS_STAND = 'src/brute_force/always_stand_results/always_stand_results.xlsx'
-    RANDOM_HIT_STAND = 'src/brute_force/random_hitstand_results/random_hitstand_results.xlsx'
-    BASIC_STRATEGY_WITHOUTCOUNTING = 'src/basic_strategy/basic_strategy_results/basic_strategy_results.xlsx'
-    BASIC_STRATEGY_WITHCOUNTING = 'src/basic_strategy/counting_strategy_results/counting_strategy_results.xlsx'
-    HISTORICAL_DATA = 'src/historical_data/historical_data_results/historical_data_results.xlsx'
-    RL_MODEL = 'src/reincforment_learing/reincforment_learing_results/reincforment_learing_results.xlsx'

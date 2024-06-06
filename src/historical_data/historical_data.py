@@ -11,20 +11,16 @@ from settings import HistoricalDataSettings
 
 from basic_strategy.basic_strategy import BasicStrategy
 
-#TODO : Fix the issue with action taken list is missing if basic strategy is used !!
 
 class HistoricalData:
     def __init__(self):
         self.create_deck()
         self.df = None
-        self.usedBasicStrategy = False
+        self.used_basic_strategy = False
         self.db_conn = None
         self.money = None
 
         self.set_simulation_settings()
-        # testing purposes
-        self.bsTime = 0
-        self.hdTime = 0
 
     def set_simulation_settings(self):
         self.simulation_amount = HistoricalDataSettings['Simulation Amount']
@@ -49,14 +45,14 @@ class HistoricalData:
 
         for card in hand:
             card = str(card)
-            card_name = card.split(' ')[0]  # Get the first word in the card name
+            card_name = card.split(' ')[0]
 
             if card_name in face_cards:
                 values.append(10)
             elif card_name == 'Ace':
-                values.append(11)  # or 11, depending on your game's rules
+                values.append(11)
             else:
-                values.append(int(card_name))  # Convert the card name to an integer
+                values.append(int(card_name))
 
         return values
 
@@ -69,7 +65,7 @@ class HistoricalData:
         if result:
             return result[0]
         else:
-            self.usedBasicStrategy = True
+            self.used_basic_strategy = True
             basic_strategy = BasicStrategy()
             list = ast.literal_eval(key[0])
             player_hand_value = sum(list)
@@ -119,7 +115,7 @@ class HistoricalData:
             elif action[i] == 'S':
                 break
 
-        if self.usedBasicStrategy:
+        if self.used_basic_strategy:
             recent_action = action
             while recent_action != None:
                 new_action = self.find_action(player_hand, dealer_hand.cards[0])
@@ -223,9 +219,11 @@ class HistoricalData:
     def output_results(self):
         self.set_simulation_settings()
         if not self.db_conn:
-            print("Connecting to database...")
-            self.db_conn = sqlite3.connect(self.pathToDB, check_same_thread=False)
-            print("Connected to database.")
+            try:
+                self.db_conn = sqlite3.connect(self.pathToDB, check_same_thread=False)
+            except Exception as e:
+                print(f"An error occurred while connecting to the database: {e}")
+                return
 
         script_dir = os.path.dirname(os.path.realpath(__file__))
         output_dir = os.path.join(script_dir, 'historical_data_results')
