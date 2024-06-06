@@ -129,6 +129,8 @@ This study was motivated by the desire to comprehensively evaluate and compare t
 
 \section{Objective of Study} The primary objective of this project is to explore and compare the performance of several Blackjack-playing models. These models include brute forces, adherence to basic strategy charts, Historical Data analysis, reinforcement learning-based decision-making, and card counting. Through extensive simulations and evaluations, we aim to assess the effectiveness of each model in terms of win rate, average return, time efficiency, and adaptability.
 
+\vskip4\baselineskip
+
 \section{Scope and Limitations}
 This study aims to explore and compare the performance of multiple Blackjack-playing models, each employing distinct strategies. The scope of the research includes:
 
@@ -188,13 +190,13 @@ There are numerous strategies to Blackjack, each developing over time as the pla
 
 \begin{itemize}
 \item {\textbf{Basic Strategy}}
-\vskip\baselineskip
+
 The concept of an ideal strategy in Blackjack is not new and has inspired study for many years. The foundation on which the present basic strategy rests was that published in essence by Baldwin, Cantey, Maisel, and McDermott in the classic 1956 paper, "The Optimum Strategy in Blackjack." A mathematically based strategy for players to use to minimize the house edge and gamblers to play with the best odds possible was defined in this paper. \cite{paper:2}.
 
 Further advancements were made by A. R. Manson, A. J. Barr and J. H. Goodnight in "Optimum Zero-Memory Strategy and Exact Probabilities for 4-Deck Blackjack," published in 1975. This research provided a detailed analysis of optimal strategies for multi-deck Blackjack games, which are more commonly used in casinos \cite{paper:3}.
 
 \item {\textbf{Card Counting}}
-\vskip\baselineskip
+
 Card counting, a technique that involves tracking the ratio of high to low cards remaining in the deck, was popularized by Edward O. Thorp in his book "Beat the Dealer."\cite{book:1} The effectiveness of card counting as a strategy was further explored and mathematically validated in subsequent studies.
 
 In 1973, I. Archer published his book, "The Archer Method of Playing 21,"\cite{book:2} where he describes in detail the developed system, which later became known as the "Archer Method" and is the first published card counting system for playing blackjack. In the Archer method, the player keeps track of the ratio of high cards to low cards in the deck and bets either more or less according to his calculated advantage and optimal strategy. This book gave a mathematical foundation to the Archer Method, and he offered practical advice on how it might be applied at the casino tables playing blackjack.
@@ -202,7 +204,7 @@ In 1973, I. Archer published his book, "The Archer Method of Playing 21,"\cite{b
 In J.T. Gollehon's book "Pay the Line,"\cite{book:3} published in 1987, many essential blackjack playing strategies are treated in-depth, including the chapters on card counting techniques. The book covers all the fundamentals of blackjack, basic strategy, and more sophisticated ideas like team play and shuffle tracking. It can be used as a valuable closet reference that will help both novice and well-seasoned blackjack players find an edge when playing against the casino.
 
 \item {\textbf{Machine Learning}}
-\vskip\baselineskip
+
 A significant contribution to the field was made in 1992 by S. Yakowitz and M. Kollier, a paper that provided an in-depth analysis of the efficacy of card counting using machine learning techniques.\cite{paper:6} Their work transcribed the search for optimal counting strategies in blackjack into the task of finding a global minimum of a multi-modal discontinuous objective function based on noisy measurements. This approach, termed 'stochastic minimization,' required minimal modeling or understanding of the problem structure. It contrasted with earlier analyses by Thorp, Braum, and others, who relied heavily on combinatorics.
 
 The exploration of different actions and the retention of those that maximize performance become crucial. A notable study by Perez-Uribe, A. and Sanchez, E. explores the use of blackjack as a test bed for neural network-based learning strategies, with a particular focus on reinforcement learning techniques.\cite{paper:7} This research highlights how reinforcement learning allows the system to autonomously develop a strategy by experimenting with various actions, leading to improved performance over time. Performance comparisons with earlier approaches demonstrate the advancements achieved through these modern techniques, offering a fresh perspective on optimizing gameplay in blackjack.
@@ -568,7 +570,7 @@ This section discusses the user interface design, detailing the user interface e
 \label{fig:simulation_screen}
 \end{figure}
 
-In the simulation screen (Figure \ref{fig:simulation_screen}), users can select up to six models to run concurrently. After selecting the desired model names, pressing the "run" button will create a new thread for each model. The designated algorithms will then be simulated using default settings, unless specific settings have been configured by the user.
+In the simulation screen in Figure \ref{fig:simulation_screen}, users can select up to six models to run concurrently. After selecting the desired model names, pressing the "run" button will create a new thread for each model. The designated algorithms will then be simulated using default settings, unless specific settings have been configured by the user.
 
 \vskip3\baselineskip
 \begin{figure}[htbp]
@@ -579,7 +581,7 @@ In the simulation screen (Figure \ref{fig:simulation_screen}), users can select 
 \label{fig:settings_screen}
 \end{figure}
 
-As mentioned above, simulations run with default settings by default. However, users can customize these settings as desired. Each model has different settings, in addition to common settings such as initial money, simulation amount, and bet amount. For example, as shown in \ref{fig:settings_screen}, the Reinforcement Learning model has numerous specific settings. These include simulation settings as well as parameters such as alpha, gamma, epsilon, and the number of episodes for training a model in real-time within the application. To simulate more customized models, users can adjust the desired variables from this settings screen.
+As mentioned above, simulations run with default settings by default. However, users can customize these settings as desired. Each model has different settings, in addition to common settings such as initial money, simulation amount, and bet amount. For example, as shown in Figure \ref{fig:settings_screen}, the Reinforcement Learning model has numerous specific settings. These include simulation settings as well as parameters such as alpha, gamma, epsilon, and the number of episodes for training a model in real-time within the application. To simulate more customized models, users can adjust the desired variables from this settings screen.
 
 \vskip\baselineskip
 
